@@ -327,7 +327,7 @@ struct bulki
 {
 	std::atomic<bool> descriptor_cnt;
 	using std::pair<bulk, std::mutex> = bulk_mutex;
-	std::mutex_rw globalrw_m;
+		std::shared_mutex smutex;
 
 //	using std::map<int, std::pair<bulk, std::mutex>> = bulk_mutex;
 	std::map<int, bulk_mutex> bm;
@@ -336,25 +336,18 @@ struct bulki
 		auto pair = make_pair(bulk(bulk_size), std::mutex{});
 		++descriptor_cnt;	// numeration starts from 1
 
-		globalrw_m.write_lock();
-		bm.map_insert(descriptor_cnt, bm_pair);
-		globalrw_m.unlock();
+		std::unique_lock(smutex);
+		bm.insert(descriptor_cnt, bm_pair);
 	}
 
 	void bulka_feed(int descriptor, const char *data, std::size_t size){
-		globalrw_m.read_lock();
+		std::shared_lock(smutex);
 		auto a = bm[b];
-		globalrw_m.unlock();
 	}
 
 	void bulka_delete(int descriptor){
-		globalrw_m.write_lock();
-		bm.map_remove(descriptor);
-		globalrw_m.unlock();
-	}
-
-	bool bulka_check(const bulk &b) {
-		return true;
+		std::unique_lock(smutex);
+		bm.erase(descriptor);
 	}
 };
 
@@ -370,6 +363,7 @@ handle_t connect(std::size_t bulk) {
 
 void receive(handle_t handle, const char *data, std::size_t size) {
 	globalrw_m.read_lock();
+	std::shared_lock lock(mutex_);
 	auto a = bm[static_cast<int>(handle)];
 	globalrw_m.unlock();
 	a.
@@ -377,7 +371,7 @@ void receive(handle_t handle, const char *data, std::size_t size) {
 
 void disconnect(handle_t handle) {
 	globalrw_m.write_lock();
-	bm.map_remove(static_cast<int>(handle));
+	bm.erase(static_cast<int>(handle));
 	globalrw_m.unlock();
 }
 
