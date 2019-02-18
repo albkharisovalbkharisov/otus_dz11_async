@@ -232,6 +232,7 @@ public:
 
 void bulk::parse_line(std::string &line)
 {
+	std::unique_lock l{m};
 	line_inc();
 	if (line == "{") {
 		if (!is_empty() && (brace_cnt == 0))
@@ -325,25 +326,26 @@ int main(int argc, char ** argv)
 
 struct bulki
 {
-	std::atomic<bool> descriptor_cnt;
-	using std::pair<bulk, std::mutex> = bulk_mutex;
-		std::shared_mutex smutex;
+	/*std::atomic<bool>*/ bool descriptor_cnt;
+	std::map<int, bulk> bm;
+	std::shared_mutex smutex;
 
-//	using std::map<int, std::pair<bulk, std::mutex>> = bulk_mutex;
-	std::map<int, bulk_mutex> bm;
-
-	bulk & void bulka_add(std::size_t bulk_size) {
+	int bulka_add(std::size_t bulk_size) {
 		auto pair = make_pair(bulk(bulk_size), std::mutex{});
-		++descriptor_cnt;	// numeration starts from 1
 
 		std::unique_lock(smutex);
+		++descriptor_cnt;	// numeration starts from 1
 		bm.insert(descriptor_cnt, bm_pair);
+		return descriptor_cnt;
 	}
 
 	void bulka_feed(int descriptor, const char *data, std::size_t size){
-		std::shared_lock(smutex);
-		auto a = bm[b];
+		{
+			std::shared_lock(smutex);
+			auto a = bm[descriptor];
+		}
 	}
+
 
 	void bulka_delete(int descriptor){
 		std::unique_lock(smutex);
@@ -357,22 +359,12 @@ struct bulki
 namespace async {
 
 handle_t connect(std::size_t bulk) {
-	bulklist
-	return nullptr;
 }
 
 void receive(handle_t handle, const char *data, std::size_t size) {
-	globalrw_m.read_lock();
-	std::shared_lock lock(mutex_);
-	auto a = bm[static_cast<int>(handle)];
-	globalrw_m.unlock();
-	a.
 }
 
 void disconnect(handle_t handle) {
-	globalrw_m.write_lock();
-	bm.erase(static_cast<int>(handle));
-	globalrw_m.unlock();
 }
 
 }
