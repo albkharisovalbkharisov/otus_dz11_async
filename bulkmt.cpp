@@ -131,21 +131,6 @@ public:
 	template<typename ...Names>
 	saver(Names... names) : IbaseClass(names...) {}
 	void handle(const type_to_handle &ht) override {
-#if 0
-		// algorythm difficultifier \m/_
-		volatile long double array[20];
-		for (auto a : array)
-		{
-			if (a > 0)
-				a *= 29124123.512149124377;
-			else
-				a = 29124123.512149124377 + a * 12421938589.1235912385235;
-		}
-		for (int i = 0; i < 100000 ; ++i) {
-			for (auto a : array)
-				a *= 1210240124091.12409192040124 * a * a;
-		}
-#endif  // 0
 
 		// invent name
 		std::hash<std::thread::id> hash_thread_id;
@@ -232,15 +217,16 @@ public:
 
 void bulk::parse_line(std::string &line)
 {
-	std::unique_lock l{m};
 	line_inc();
 	if (line == "{") {
+		std::unique_lock l{m};
 		if (!is_empty() && (brace_cnt == 0))
 			flush();
 		++brace_cnt;
 		return;
 	}
 	else if (line == "}") {
+		std::unique_lock l{m};
 		if (brace_cnt > 0) {
 			--brace_cnt;
 			if (brace_cnt == 0) {
@@ -252,6 +238,7 @@ void bulk::parse_line(std::string &line)
 	else
 		add(line);
 
+	std::unique_lock l{m};
 	if (is_full() && !brace_cnt)
 		flush();
 }
@@ -280,7 +267,7 @@ bool bulk::is_empty(void)
 	return vs.size() == 0;
 }
 
-
+#if 0
 int main(int argc, char ** argv)
 {
 	if (argc != 2)
@@ -323,19 +310,20 @@ int main(int argc, char ** argv)
 	saverHandler.stop_threads();
 	return 0;
 }
+#endif	// 0
 
 struct bulki
 {
-	/*std::atomic<bool>*/ bool descriptor_cnt;
+	bool descriptor_cnt;
 	std::map<int, bulk> bm;
 	std::shared_mutex smutex;
 
 	int bulka_add(std::size_t bulk_size) {
-		auto pair = make_pair(bulk(bulk_size), std::mutex{});
-
 		std::unique_lock(smutex);
 		++descriptor_cnt;	// numeration starts from 1
-		bm.insert(descriptor_cnt, bm_pair);
+		std::tie(std::ignore, result) = bm.insert(descriptor_cnt, bulk(bulk_size));
+		if (!result)
+			throw "value can't be inserted into bm";
 		return descriptor_cnt;
 	}
 
@@ -344,6 +332,7 @@ struct bulki
 			std::shared_lock(smutex);
 			auto a = bm[descriptor];
 		}
+		a.parse_line(std::string(data, size));
 	}
 
 
@@ -359,12 +348,15 @@ struct bulki
 namespace async {
 
 handle_t connect(std::size_t bulk) {
+	return bulka_add(bulk);
 }
 
 void receive(handle_t handle, const char *data, std::size_t size) {
+	bulka_feed(handle, data, size);
 }
 
 void disconnect(handle_t handle) {
+	bulka_delete(handle);
 }
 
 }
