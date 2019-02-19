@@ -1,22 +1,21 @@
 cmake_minimum_required(VERSION 3.5)
 
 project(async VERSION 0.0.$ENV{TRAVIS_BUILD_NUMBER})
-
 set(CMAKE_CXX_STANDARD 14)
-
 find_package(Threads)
 
 add_executable(async async.cpp)
+add_library(bulkmt_async bulkmt_async.cpp)
 
 set_target_properties(async PROPERTIES
-    CXX_STANDARD 14
-    CXX_STANDARD_REQUIRED ON
-    COMPILE_OPTIONS "-Wpedantic;-Wall;-Wextra"
-    # COMPILE_OPTIONS "-Wpedantic;-Wall;-Wextra;-fsanitize=thread"
+	CXX_STANDARD 14
+	CXX_STANDARD_REQUIRED ON
+	COMPILE_OPTIONS "-Wpedantic;-Wall;-Wextra"
 )
 
 target_link_libraries(async
-    ${CMAKE_THREAD_LIBS_INIT}
+	${CMAKE_THREAD_LIBS_INIT}
+	bulkmt_async
 )
 
 
