@@ -7,6 +7,8 @@
 #include <string>
 #include <signal.h>
 #include <stdexcept>
+#include <shared_mutex>
+#include <map>
 
 #include <chrono>
 #include <condition_variable>
@@ -212,6 +214,10 @@ public:
 	~bulk(){
 		print_counters("main");
 	}
+
+	bulk& bulk::operator=(const bulk&) {
+
+	}
 };
 
 
@@ -219,14 +225,14 @@ void bulk::parse_line(std::string &line)
 {
 	line_inc();
 	if (line == "{") {
-		std::unique_lock l{m};
+		std::unique_lock<std::mutex> l{m};
 		if (!is_empty() && (brace_cnt == 0))
 			flush();
 		++brace_cnt;
 		return;
 	}
 	else if (line == "}") {
-		std::unique_lock l{m};
+		std::unique_lock<std::mutex> l{m};
 		if (brace_cnt > 0) {
 			--brace_cnt;
 			if (brace_cnt == 0) {
@@ -238,7 +244,7 @@ void bulk::parse_line(std::string &line)
 	else
 		add(line);
 
-	std::unique_lock l{m};
+	std::unique_lock<std::mutex> l{m};
 	if (is_full() && !brace_cnt)
 		flush();
 }
@@ -314,14 +320,19 @@ int main(int argc, char ** argv)
 
 struct bulki
 {
-	bool descriptor_cnt;
+	int descriptor_cnt;
 	std::map<int, bulk> bm;
-	std::shared_mutex smutex;
+	std::shared_timed_mutex smutex;
 
 	int bulka_add(std::size_t bulk_size) {
-		std::unique_lock(smutex);
+		std::unique_lock<std::shared_timed_mutex> l{smutex};
+//		std::unique_lock(smutex);
 		++descriptor_cnt;	// numeration starts from 1
-		std::tie(std::ignore, result) = bm.insert(descriptor_cnt, bulk(bulk_size));
+		bool result = false;
+		bulk qwe{bulk_size};
+//		std::tie(std::ignore, result) = bm.insert(descriptor_cnt, qwe);
+		bm[descriptor_cnt] = qwe;
+//		std::tie(std::ignore, result) = bm.insert(descriptor_cnt, bulk(bulk_size));
 		if (!result)
 			throw "value can't be inserted into bm";
 		return descriptor_cnt;
@@ -329,7 +340,8 @@ struct bulki
 
 	void bulka_feed(int descriptor, const char *data, std::size_t size){
 		{
-			std::shared_lock(smutex);
+			std::shared_lock<std::shared_timed_mutex> l{smutex};
+//			std::shared_lock(smutex);
 			auto a = bm[descriptor];
 		}
 		a.parse_line(std::string(data, size));
@@ -337,7 +349,8 @@ struct bulki
 
 
 	void bulka_delete(int descriptor){
-		std::unique_lock(smutex);
+		std::unique_lock<std::shared_timed_mutex> l{smutex};
+//		std::unique_lock(smutex);
 		bm.erase(descriptor);
 	}
 };
