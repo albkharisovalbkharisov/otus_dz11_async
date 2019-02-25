@@ -210,18 +210,18 @@ public:
 	void signal_callback_handler(int signum);
 	bool is_full(void);
 	bool is_empty(void);
-	void parse_line(std::string &line);
+	void parse_line(std::string line);
 	~bulk(){
 		print_counters("main");
 	}
 
-	bulk& bulk::operator=(const bulk&) {
-
-	}
+//	bulk& operator=(const bulk&) {
+//
+//	}
 };
 
 
-void bulk::parse_line(std::string &line)
+void bulk::parse_line(std::string line)
 {
 	line_inc();
 	if (line == "{") {
@@ -318,58 +318,47 @@ int main(int argc, char ** argv)
 }
 #endif	// 0
 
-struct bulki
+namespace bulki
 {
 	int descriptor_cnt;
+//	std::forward_list<std::pair<int, bulk>> bl;
 	std::map<int, bulk> bm;
 	std::shared_timed_mutex smutex;
 
 	int bulka_add(std::size_t bulk_size) {
 		std::unique_lock<std::shared_timed_mutex> l{smutex};
-//		std::unique_lock(smutex);
 		++descriptor_cnt;	// numeration starts from 1
 		bool result = false;
-		bulk qwe{bulk_size};
-//		std::tie(std::ignore, result) = bm.insert(descriptor_cnt, qwe);
-		bm[descriptor_cnt] = qwe;
-//		std::tie(std::ignore, result) = bm.insert(descriptor_cnt, bulk(bulk_size));
-		if (!result)
-			throw "value can't be inserted into bm";
+		/*std::tie(std::ignore, result) = */bm.emplace(descriptor_cnt, bulk(bulk_size));
 		return descriptor_cnt;
 	}
 
 	void bulka_feed(int descriptor, const char *data, std::size_t size){
-		{
-			std::shared_lock<std::shared_timed_mutex> l{smutex};
-//			std::shared_lock(smutex);
-			auto a = bm[descriptor];
-		}
-		a.parse_line(std::string(data, size));
+		std::shared_lock<std::shared_timed_mutex> l{smutex};
+		auto &a = bm[descriptor];
+		a.parse_line(std::string(data, size));	// move outside
 	}
 
 
 	void bulka_delete(int descriptor){
 		std::unique_lock<std::shared_timed_mutex> l{smutex};
-//		std::unique_lock(smutex);
 		bm.erase(descriptor);
 	}
 };
 
 
-
-
 namespace async {
 
 handle_t connect(std::size_t bulk) {
-	return bulka_add(bulk);
+	return bulki::bulka_add(bulk);
 }
 
 void receive(handle_t handle, const char *data, std::size_t size) {
-	bulka_feed(handle, data, size);
+	bulki::bulka_feed(handle, data, size);
 }
 
 void disconnect(handle_t handle) {
-	bulka_delete(handle);
+	bulki::bulka_delete(handle);
 }
 
 }
