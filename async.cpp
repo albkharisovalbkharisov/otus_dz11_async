@@ -329,14 +329,19 @@ namespace bulki
 		std::unique_lock<std::shared_timed_mutex> l{smutex};
 		++descriptor_cnt;	// numeration starts from 1
 		bool result = false;
-		/*std::tie(std::ignore, result) = */bm.emplace(descriptor_cnt, bulk(bulk_size));
+//		/*std::tie(std::ignore, result) = */bm.emplace(descriptor_cnt, bulk(bulk_size));
+//		/*std::tie(std::ignore, result) = */bm.emplace(descriptor_cnt, bulk_size);
+//		bulk b{bulk_size};
+		bm.emplace(descriptor_cnt, bulk_size);
 		return descriptor_cnt;
 	}
 
 	void bulka_feed(int descriptor, const char *data, std::size_t size){
 		std::shared_lock<std::shared_timed_mutex> l{smutex};
-		auto &a = bm[descriptor];
+		// no exception handling. Should be handled higher
+		auto &a = bm.at(descriptor);
 		a.parse_line(std::string(data, size));	// move outside
+//		bm.at(descriptor).parse_line(std::string(data, size));	// move outside
 	}
 
 
@@ -350,14 +355,18 @@ namespace bulki
 namespace async {
 
 handle_t connect(std::size_t bulk) {
-	return bulki::bulka_add(bulk);
+	int ret = bulki::bulka_add(bulk);
+	std::cout << "bulka add " << ret << std::endl;
+	return ret;
 }
 
 void receive(handle_t handle, const char *data, std::size_t size) {
+	std::cout << "bulka(" << handle << ") feed: " << std::string(data, size) << std::endl;
 	bulki::bulka_feed(handle, data, size);
 }
 
 void disconnect(handle_t handle) {
+	std::cout << "bulka(" << handle << ") delete" << std::endl;
 	bulki::bulka_delete(handle);
 }
 
