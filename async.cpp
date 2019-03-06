@@ -181,7 +181,7 @@ class bulk : public dbg_counter<true>
 {
 	const size_t bulk_size;
 	std::vector<std::string> vs;
-	std::list<IbaseClass *> lHandler;
+	std::list<std::shared_ptr<IbaseClass>> lHandler;
 	size_t brace_cnt;
 	std::time_t time_first_chunk;
 	std::mutex m;
@@ -189,10 +189,16 @@ class bulk : public dbg_counter<true>
 public:
 	bulk(size_t size) : bulk_size(size), brace_cnt(0), time_first_chunk(0) {
 		vs.reserve(bulk_size);
+		auto a = std::shared_ptr<IbaseClass> (new printer("log"));
+		auto b = std::shared_ptr<IbaseClass> (new saver("file1", "file2"));
+//		auto a = std::make_shared<printer>("log");
+//		auto b = std::make_shared<saver>("file1", "file2");
+		this->add_handler(a);
+		this->add_handler(b);
 	}
 
-	void add_handler(IbaseClass &handler) {
-		lHandler.push_back(&handler);
+	void add_handler(std::shared_ptr<IbaseClass> &handler) {
+		lHandler.push_back(handler);
 	}
 
 	void flush(void) {
