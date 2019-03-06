@@ -10,6 +10,8 @@
 #include <shared_mutex>
 #include <map>
 
+#include <utility>
+#include <memory>
 #include <chrono>
 #include <condition_variable>
 #include <queue>
@@ -322,7 +324,7 @@ namespace bulki
 {
 	int descriptor_cnt;
 //	std::forward_list<std::pair<int, bulk>> bl;
-	std::map<int, bulk> bm;
+	std::map<int, std::shared_ptr<bulk>> bm;
 	std::shared_timed_mutex smutex;
 
 	int bulka_add(std::size_t bulk_size) {
@@ -332,7 +334,7 @@ namespace bulki
 //		/*std::tie(std::ignore, result) = */bm.emplace(descriptor_cnt, bulk(bulk_size));
 //		/*std::tie(std::ignore, result) = */bm.emplace(descriptor_cnt, bulk_size);
 //		bulk b{bulk_size};
-		bm.emplace(descriptor_cnt, bulk_size);
+		bm.emplace(std::make_pair(descriptor_cnt, std::make_shared<bulk>(bulk_size)));
 		return descriptor_cnt;
 	}
 
@@ -340,7 +342,7 @@ namespace bulki
 		std::shared_lock<std::shared_timed_mutex> l{smutex};
 		// no exception handling. Should be handled higher
 		auto &a = bm.at(descriptor);
-		a.parse_line(std::string(data, size));	// move outside
+		a->parse_line(std::string(data, size));	// move outside
 //		bm.at(descriptor).parse_line(std::string(data, size));	// move outside
 	}
 
