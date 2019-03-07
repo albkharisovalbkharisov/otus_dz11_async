@@ -108,8 +108,8 @@ public:
 		{
 			std::unique_lock<std::mutex> lk(cv_m);
 			qMsg.push(ht);
+			cv.notify_one();
 		}
-		cv.notify_one();
 	}
 
 private:
@@ -183,7 +183,7 @@ class bulk : public dbg_counter<true>
 	const size_t bulk_size;
 	std::vector<std::string> vs;
 	std::list<std::shared_ptr<IbaseClass>> lHandler;
-	size_t brace_cnt;
+	std::atomic<size_t> brace_cnt;
 	std::time_t time_first_chunk;
 	std::mutex m;
 
@@ -192,8 +192,6 @@ public:
 		vs.reserve(bulk_size);
 		auto print_ptr = std::shared_ptr<IbaseClass> (new printer("log"));
 		auto save_ptr = std::shared_ptr<IbaseClass> (new saver("file1", "file2"));
-//		auto a = std::make_shared<printer>("log");
-//		auto b = std::make_shared<saver>("file1", "file2");
 		this->add_handler(print_ptr);
 		this->add_handler(save_ptr);
 		print_ptr->start_threads();
@@ -336,7 +334,7 @@ namespace bulki
 	std::map<int, std::shared_ptr<bulk>> bm;
 	std::shared_timed_mutex smutex;
 
-	int bulka_add(std::size_t bulk_size) {
+	int bulka_create(std::size_t bulk_size) {
 		std::unique_lock<std::shared_timed_mutex> l{smutex};
 		++descriptor_cnt;	// numeration starts from 1
 		bool result = false;
@@ -348,17 +346,21 @@ namespace bulki
 	}
 
 	void bulka_feed(int descriptor, const char *data, std::size_t size){
-//		std::shared_lock<std::shared_timed_mutex> l{smutex};
-		std::unique_lock<std::shared_timed_mutex> l{smutex};
-		// no exception handling. Should be handled higher
-		auto &a = bm.at(descriptor);
+//		decltype(bm.[0]) a;
+		std::shared_ptr<bulk> a;
+		{
+//			std::shared_lock<std::shared_timed_mutex> l{smutex};
+			std::unique_lock<std::shared_timed_mutex> l{smutex};
+			// no exception handling. Should be handled higher
+			a = bm.at(descriptor);
+		}
+		std::shared_lock<std::shared_timed_mutex> l{smutex};
 
 		std::stringstream ss(std::string(data, size));
 		for(std::string line; std::getline(ss, line); ) {
 			a->parse_line(line);
 		}
 	}
-
 
 	void bulka_delete(int descriptor){
 		std::unique_lock<std::shared_timed_mutex> l{smutex};
@@ -370,7 +372,7 @@ namespace bulki
 namespace async {
 
 handle_t connect(std::size_t bulk_size) {
-	int ret = bulki::bulka_add(bulk_size);
+	int ret = bulki::bulka_create(bulk_size);
 	std::cout << "bulka add " << ret << std::endl;
 	return ret;
 }
