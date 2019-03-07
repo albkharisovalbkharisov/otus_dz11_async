@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <list>
 #include <fstream>
@@ -208,6 +209,7 @@ public:
 		bulk_inc();
 		IbaseClass::type_to_handle ht = {vs, time_first_chunk};
 		for (const auto &h : lHandler) {
+			std::cout << "notify " << std::endl;
 			h->notify(ht);
 		}
 		vs.clear();
@@ -222,15 +224,12 @@ public:
 	~bulk(){
 		print_counters("main");
 	}
-
-//	bulk& operator=(const bulk&) {
-//
-//	}
 };
 
 
 void bulk::parse_line(std::string line)
 {
+//	std::cout << "parse_line: \"" << line << "\"" << std::endl;
 	line_inc();
 	if (line == "{") {
 		std::unique_lock<std::mutex> l{m};
@@ -348,8 +347,11 @@ namespace bulki
 		std::shared_lock<std::shared_timed_mutex> l{smutex};
 		// no exception handling. Should be handled higher
 		auto &a = bm.at(descriptor);
-		a->parse_line(std::string(data, size));	// move outside
-//		bm.at(descriptor).parse_line(std::string(data, size));	// move outside
+
+		std::stringstream ss(std::string(data, size));
+		for(std::string line; std::getline(ss, line); ) {
+			a->parse_line(line);
+		}
 	}
 
 
@@ -362,8 +364,8 @@ namespace bulki
 
 namespace async {
 
-handle_t connect(std::size_t bulk) {
-	int ret = bulki::bulka_add(bulk);
+handle_t connect(std::size_t bulk_size) {
+	int ret = bulki::bulka_add(bulk_size);
 	std::cout << "bulka add " << ret << std::endl;
 	return ret;
 }
