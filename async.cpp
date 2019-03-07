@@ -211,7 +211,6 @@ public:
 		bulk_inc();
 		IbaseClass::type_to_handle ht = {vs, time_first_chunk};
 		for (const auto &h : lHandler) {
-			std::cout << "notify " << std::endl;
 			h->notify(ht);
 		}
 		vs.clear();
@@ -349,7 +348,8 @@ namespace bulki
 	}
 
 	void bulka_feed(int descriptor, const char *data, std::size_t size){
-		std::shared_lock<std::shared_timed_mutex> l{smutex};
+//		std::shared_lock<std::shared_timed_mutex> l{smutex};
+		std::unique_lock<std::shared_timed_mutex> l{smutex};
 		// no exception handling. Should be handled higher
 		auto &a = bm.at(descriptor);
 
