@@ -190,12 +190,14 @@ class bulk : public dbg_counter<true>
 public:
 	bulk(size_t size) : bulk_size(size), brace_cnt(0), time_first_chunk(0) {
 		vs.reserve(bulk_size);
-		auto a = std::shared_ptr<IbaseClass> (new printer("log"));
-		auto b = std::shared_ptr<IbaseClass> (new saver("file1", "file2"));
+		auto print_ptr = std::shared_ptr<IbaseClass> (new printer("log"));
+		auto save_ptr = std::shared_ptr<IbaseClass> (new saver("file1", "file2"));
 //		auto a = std::make_shared<printer>("log");
 //		auto b = std::make_shared<saver>("file1", "file2");
-		this->add_handler(a);
-		this->add_handler(b);
+		this->add_handler(print_ptr);
+		this->add_handler(save_ptr);
+		print_ptr->start_threads();
+		save_ptr->start_threads();
 	}
 
 	void add_handler(std::shared_ptr<IbaseClass> &handler) {
@@ -223,6 +225,9 @@ public:
 	void parse_line(std::string line);
 	~bulk(){
 		print_counters("main");
+		for (const auto &h : lHandler) {
+			h->stop_threads();
+		}
 	}
 };
 
