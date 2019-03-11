@@ -341,12 +341,9 @@ namespace bulki
 	}
 
 	void bulka_feed(int descriptor, const char *data, std::size_t size){
-		std::shared_ptr<bulk> a;
 		std::shared_lock<std::shared_timed_mutex> l{smutex};
-		{
-			// no exception handling. Should be handled higher
-			a = bm.at(descriptor);
-		}
+		// no exception handling. Should be handled higher
+		auto a = bm.at(descriptor);
 
 		std::stringstream ss(std::string(data, size));
 		for(std::string line; std::getline(ss, line); ) {
@@ -365,12 +362,12 @@ namespace async {
 
 handle_t connect(std::size_t bulk_size) {
 	int ret = bulki::bulka_create(bulk_size);
-	std::cout << "bulka add " << ret << std::endl;
+//	std::cout << "bulka add " << ret << std::endl;
 	return ret;
 }
 
 void receive(handle_t handle, const char *data, std::size_t size) {
-	std::cout << "bulka(" << handle << ") feed: " << std::string(data, size) << std::endl;
+//	std::cout << "bulka(" << handle << ") feed: " << std::string(data, size) << std::endl;
 	bulki::bulka_feed(handle, data, size);
 }
 

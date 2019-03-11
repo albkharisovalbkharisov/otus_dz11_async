@@ -18,14 +18,20 @@ void feed(decltype(async::connect(3)) &h, const char *str)
 int main(int, char *[]) {
 	try {
 //		auto h = async::connect(3);
-		auto h2 = async::connect(2);
+//		auto h2 = async::connect(2);
 //		async::receive(h, "1\n", 1);
 		
+		int h[4];
+		int j = 2;
+		for (auto &i : h) {
+			i = async::connect(j++);
+		}
+
 		for (int i = 0; i < 500 ; ++i) {
-			feed(h2, "0\n1\n");
-			feed(h2, "3\n2\n1\n");
-			feed(h2, "3\n2\n1\n");
-			feed(h2, "5\n6\n7\n8\n9\n0\n1\n2\n3\n4\n3\n2\n1\n2\n2345234523452345234\n0\n1\n3\n2\n1\n");
+			feed(h[0], "0\n1\n2\n3\n4\n5\n6\n");
+			feed(h[1], "3\n2\n1\n0\n0\n0\n9\n");
+			feed(h[2], "3\n2\n1\n0\n0\n0\n0\n");
+			feed(h[3], "5\n6\n7\n8\n9\n0\n1\n2\n3\n4\n3\n2\n1\n2\n2345234523452345234\n0\n1\n3\n2\n1\n");
 		}
 #if 0
 		async::receive(h2, "{\n1\n", 2);
@@ -47,7 +53,10 @@ int main(int, char *[]) {
 			t.join();
 		}
 //		async::disconnect(h);
-		async::disconnect(h2);
+//		async::disconnect(h2);
+		for (auto i : h) {
+			async::disconnect(i);
+		}
 	} catch (std::exception &e) {
 		std::cout << e.what() << std::endl;
 	}
