@@ -108,8 +108,8 @@ public:
 		{
 			std::unique_lock<std::mutex> lk(cv_m);
 			qMsg.push(ht);
-			cv.notify_one();
 		}
+		cv.notify_one();
 	}
 
 private:
@@ -191,11 +191,11 @@ public:
 	bulk(size_t size) : bulk_size(size), brace_cnt(0), time_first_chunk(0) {
 		vs.reserve(bulk_size);
 		auto print_ptr = std::shared_ptr<IbaseClass> (new printer("log"));
-		auto save_ptr = std::shared_ptr<IbaseClass> (new saver("file1", "file2"));
+//		auto save_ptr = std::shared_ptr<IbaseClass> (new saver("file1", "file2"));
 		this->add_handler(print_ptr);
-		this->add_handler(save_ptr);
+//		this->add_handler(save_ptr);
 		print_ptr->start_threads();
-		save_ptr->start_threads();
+//		save_ptr->start_threads();
 	}
 
 	void add_handler(std::shared_ptr<IbaseClass> &handler) {
@@ -233,15 +233,14 @@ void bulk::parse_line(std::string line)
 {
 //	std::cout << "parse_line: \"" << line << "\"" << std::endl;
 	line_inc();
+	std::unique_lock<std::mutex> l{m};
 	if (line == "{") {
-		std::unique_lock<std::mutex> l{m};
 		if (!is_empty() && (brace_cnt == 0))
 			flush();
 		++brace_cnt;
 		return;
 	}
 	else if (line == "}") {
-		std::unique_lock<std::mutex> l{m};
 		if (brace_cnt > 0) {
 			--brace_cnt;
 			if (brace_cnt == 0) {
@@ -253,7 +252,6 @@ void bulk::parse_line(std::string line)
 	else
 		add(line);
 
-	std::unique_lock<std::mutex> l{m};
 	if (is_full() && !brace_cnt)
 		flush();
 }
@@ -268,6 +266,7 @@ void bulk::add(std::string &s)
 
 void bulk::signal_callback_handler(int signum)
 {
+	std::unique_lock<std::mutex> l{m};
 	if ((signum == SIGINT) || (signum == SIGTERM))
 		flush();
 }
@@ -330,7 +329,6 @@ int main(int argc, char ** argv)
 namespace bulki
 {
 	int descriptor_cnt;
-//	std::forward_list<std::pair<int, bulk>> bl;
 	std::map<int, std::shared_ptr<bulk>> bm;
 	std::shared_timed_mutex smutex;
 
@@ -338,23 +336,17 @@ namespace bulki
 		std::unique_lock<std::shared_timed_mutex> l{smutex};
 		++descriptor_cnt;	// numeration starts from 1
 		bool result = false;
-//		/*std::tie(std::ignore, result) = */bm.emplace(descriptor_cnt, bulk(bulk_size));
-//		/*std::tie(std::ignore, result) = */bm.emplace(descriptor_cnt, bulk_size);
-//		bulk b{bulk_size};
 		bm.emplace(std::make_pair(descriptor_cnt, std::make_shared<bulk>(bulk_size)));
 		return descriptor_cnt;
 	}
 
 	void bulka_feed(int descriptor, const char *data, std::size_t size){
-//		decltype(bm.[0]) a;
 		std::shared_ptr<bulk> a;
+		std::shared_lock<std::shared_timed_mutex> l{smutex};
 		{
-//			std::shared_lock<std::shared_timed_mutex> l{smutex};
-			std::unique_lock<std::shared_timed_mutex> l{smutex};
 			// no exception handling. Should be handled higher
 			a = bm.at(descriptor);
 		}
-		std::shared_lock<std::shared_timed_mutex> l{smutex};
 
 		std::stringstream ss(std::string(data, size));
 		for(std::string line; std::getline(ss, line); ) {
