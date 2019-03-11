@@ -66,6 +66,7 @@ public:
 		const std::time_t t;
 	};
 	std::condition_variable cv;
+	// cv_m is mutex to protect qMsg - queue to send data from main thread to worker threads
 	std::mutex cv_m;
 	std::queue<type_to_handle> qMsg;
 	std::list<worker> vThread;
@@ -185,6 +186,7 @@ class bulk : public dbg_counter<true>
 	std::list<std::shared_ptr<IbaseClass>> lHandler;
 	std::atomic<size_t> brace_cnt;
 	std::time_t time_first_chunk;
+	// m is mutex to protect concurent access to one bulk
 	std::mutex m;
 
 public:
@@ -258,6 +260,7 @@ void bulk::parse_line(std::string line)
 
 void bulk::add(std::string &s)
 {
+	// protected by m mutex
 	cmd_inc();
 	if (time_first_chunk == 0)
 		time_first_chunk = std::time(0);
@@ -281,55 +284,15 @@ bool bulk::is_empty(void)
 	return vs.size() == 0;
 }
 
-#if 0
-int main(int argc, char ** argv)
-{
-	if (argc != 2)
-	{
-		std::cerr << "Incorrect number of arguments: " << argc - 1 << ", expected: 1" << std::endl;
-		return -4;
-	}
-
-	size_t j = 0;
-	std::string arg = argv[1];
-	try {
-		std::size_t pos;
-		j = std::stoi(arg, &pos);
-		if (pos < arg.size()) {
-			std::cerr << "Trailing characters after number: " << arg << '\n';
-			return -3;
-		}
-	} catch (std::invalid_argument const &ex) {
-		std::cerr << "Invalid number: " << arg << '\n';
-		return -1;
-	} catch (std::out_of_range const &ex) {
-		std::cerr << "Number out of range: " << arg << '\n';
-		return -2;
-	}
-
-	class bulk b{j};
-	printer printerHandler("log");
-	saver saverHandler("file1", "file2"/*, "file3", "file4", "file5", "file6", "file7", "file8"*/);
-
-	b.add_handler(printerHandler);
-	b.add_handler(saverHandler);
-	printerHandler.start_threads();
-	saverHandler.start_threads();
-
-	for(std::string line; std::getline(std::cin, line); ) {
-		b.parse_line(line);
-	}
-
-	printerHandler.stop_threads();
-	saverHandler.stop_threads();
-	return 0;
-}
-#endif	// 0
-
-namespace bulki
+namespace bulk_agregator
 {
 	int descriptor_cnt;
 	std::map<int, std::shared_ptr<bulk>> bm;
+	// smutex is mutex to protect access to bm.
+	// It is shared because we can feed 2 different bulks
+	// simultaniously. For protecting one certain bulk from
+	// 2 simultaious accesses there are mutex inside
+	// bulk class.
 	std::shared_timed_mutex smutex;
 
 	int bulka_create(std::size_t bulk_size) {
@@ -361,19 +324,19 @@ namespace bulki
 namespace async {
 
 handle_t connect(std::size_t bulk_size) {
-	int ret = bulki::bulka_create(bulk_size);
+	int ret = bulk_agregator::bulka_create(bulk_size);
 //	std::cout << "bulka add " << ret << std::endl;
 	return ret;
 }
 
 void receive(handle_t handle, const char *data, std::size_t size) {
 //	std::cout << "bulka(" << handle << ") feed: " << std::string(data, size) << std::endl;
-	bulki::bulka_feed(handle, data, size);
+	bulk_agregator::bulka_feed(handle, data, size);
 }
 
 void disconnect(handle_t handle) {
 	std::cout << "bulka(" << handle << ") delete" << std::endl;
-	bulki::bulka_delete(handle);
+	bulk_agregator::bulka_delete(handle);
 }
 
 }
