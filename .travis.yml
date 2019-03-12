@@ -1,11 +1,19 @@
+dist: xenial
 language: cpp
 compiler: gcc
+
 before_script:
+- sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 - sudo apt update
-- sudo apt install libboost-test-dev -y
-- echo "deb http://archive.ubuntu.com/ubuntu xenial main universe" | sudo tee -a /etc/apt/sources.list.d/xenial.list
-- sudo apt update
-- sudo apt install libspdlog-dev -y
+- sudo apt -y install gcc-7 g++-7 libboost-test-dev doxygen graphviz
+- sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 1
+- sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 1
+#before_script:
+#- sudo apt update
+#- sudo apt install libboost-test-dev -y
+#- echo "deb http://archive.ubuntu.com/ubuntu xenial main universe" | sudo tee -a /etc/apt/sources.list.d/xenial.list
+#- sudo apt update
+#- sudo apt install libspdlog-dev -y
 script:
 - cmake --version
 - cmake .
