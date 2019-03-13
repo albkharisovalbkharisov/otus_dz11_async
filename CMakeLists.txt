@@ -7,7 +7,7 @@ find_package(Threads)
 add_library(async SHARED async.cpp async.h)
 add_executable(async_cli main.cpp)
 
-set_target_properties(async_cli PROPERTIES
+set_target_properties(async PROPERTIES
     CXX_STANDARD 14
     CXX_STANDARD_REQUIRED ON
     COMPILE_OPTIONS "-Wpedantic;-Wall;-Wextra"

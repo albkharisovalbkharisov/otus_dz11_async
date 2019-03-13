@@ -298,7 +298,6 @@ namespace bulk_agregator
 	int bulka_create(std::size_t bulk_size) {
 		std::unique_lock<std::shared_timed_mutex> l{smutex};
 		++descriptor_cnt;	// numeration starts from 1
-		bool result = false;
 		bm.emplace(std::make_pair(descriptor_cnt, std::make_shared<bulk>(bulk_size)));
 		return descriptor_cnt;
 	}
@@ -318,8 +317,7 @@ namespace bulk_agregator
 		std::unique_lock<std::shared_timed_mutex> l{smutex};
 		bm.erase(descriptor);
 	}
-};
-
+}
 
 namespace async {
 
