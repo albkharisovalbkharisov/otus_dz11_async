@@ -21,7 +21,7 @@ int main(int, char *[]) {
 //		auto h2 = async::connect(2);
 //		async::receive(h, "1\n", 1);
 		
-		int h[4];
+		async::handle_t h[4];
 		int j = 2;
 		for (auto &i : h) {
 			i = async::connect(j++);

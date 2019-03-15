@@ -287,7 +287,7 @@ bool bulk::is_empty(void)
 namespace bulk_agregator
 {
 	int descriptor_cnt;
-	std::map<int, std::shared_ptr<bulk>> bm;
+	std::map<async::handle_t, std::shared_ptr<bulk>> bm;
 	// smutex is mutex to protect access to bm.
 	// It is shared because we can feed 2 different bulks
 	// simultaniously. For protecting one certain bulk from
@@ -295,14 +295,15 @@ namespace bulk_agregator
 	// bulk class.
 	std::shared_timed_mutex smutex;
 
-	int bulka_create(std::size_t bulk_size) {
+	async::handle_t bulka_create(std::size_t bulk_size) {
 		std::unique_lock<std::shared_timed_mutex> l{smutex};
 		++descriptor_cnt;	// numeration starts from 1
-		bm.emplace(std::make_pair(descriptor_cnt, std::make_shared<bulk>(bulk_size)));
-		return descriptor_cnt;
+		async::handle_t descriptor = reinterpret_cast<async::handle_t>(descriptor_cnt);
+		bm.emplace(std::make_pair(descriptor, std::make_shared<bulk>(bulk_size)));
+		return descriptor;
 	}
 
-	void bulka_feed(int descriptor, const char *data, std::size_t size){
+	void bulka_feed(async::handle_t descriptor, const char *data, std::size_t size){
 		std::shared_lock<std::shared_timed_mutex> l{smutex};
 		// no exception handling. Should be handled higher
 		auto a = bm.at(descriptor);
@@ -313,7 +314,7 @@ namespace bulk_agregator
 		}
 	}
 
-	void bulka_delete(int descriptor){
+	void bulka_delete(async::handle_t descriptor){
 		std::unique_lock<std::shared_timed_mutex> l{smutex};
 		bm.erase(descriptor);
 	}
@@ -321,18 +322,18 @@ namespace bulk_agregator
 
 namespace async {
 
-handle_t connect(std::size_t bulk_size) {
-	int ret = bulk_agregator::bulka_create(bulk_size);
+async::handle_t connect(std::size_t bulk_size) {
+	auto ret = bulk_agregator::bulka_create(bulk_size);
 //	std::cout << "bulka add " << ret << std::endl;
 	return ret;
 }
 
-void receive(handle_t handle, const char *data, std::size_t size) {
+void receive(async::handle_t handle, const char *data, std::size_t size) {
 //	std::cout << "bulka(" << handle << ") feed: " << std::string(data, size) << std::endl;
 	bulk_agregator::bulka_feed(handle, data, size);
 }
 
-void disconnect(handle_t handle) {
+void disconnect(async::handle_t handle) {
 	std::cout << "bulka(" << handle << ") delete" << std::endl;
 	bulk_agregator::bulka_delete(handle);
 }
