@@ -18,7 +18,7 @@ script:
 - cmake --version
 - cmake .
 - cmake --build . -- VERBOSE=1
-#- cmake --build . --target package
+- cmake --build . --target package
 deploy:
   provider: script
   skip_cleanup: true
