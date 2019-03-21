@@ -49,6 +49,18 @@ int main(int, char *[]) {
 //		async::receive(h, "b9\nb10\nb11\n", 11);
 		async::receive(h2, "b9\nb10\nb11\n}\n", 13);
 #endif	// 0
+		async::receive(h,"0",1);
+		async::receive(h," ",1);
+		async::receive(h,"0",1);
+		async::receive(h,"\n",1);
+		async::receive(h,"\n",1);
+		async::receive(h,"1",1);
+		async::receive(h," ",1);
+		async::receive(h,"1",1);
+		async::receive(h,"\n",1);
+		async::receive(h,"2",1);
+		async::receive(h,"\n",1);
+
 		for (auto &t : v) {
 			t.join();
 		}
