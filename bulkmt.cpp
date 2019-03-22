@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iostream>
+#include <fstream>
 #include "bulkmt.h"
 
 
@@ -142,12 +143,12 @@ void bulk::flush(void) {
 
 bulk::bulk(size_t size) : bulk_size(size), brace_cnt(0), time_first_chunk(0) {
 	vs.reserve(bulk_size);
-	auto print_ptr = std::make_shared<printer> ("log");
 	auto save_ptr = std::make_shared<saver> ("file1", "file2");
-	lHandler.push_back(print_ptr);
 	lHandler.push_back(save_ptr);
-	print_ptr->start_threads();
 	save_ptr->start_threads();
+	auto print_ptr = std::make_shared<printer> ("log");
+	lHandler.push_back(print_ptr);
+	print_ptr->start_threads();
 }
 
 void bulk::parse_line(std::string line)
