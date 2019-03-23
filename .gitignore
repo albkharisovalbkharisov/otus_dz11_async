@@ -7,5 +7,4 @@ bulkmt
 cmake_install.cmake
 libterminator.a
 other
-libasync.so
 async_cli

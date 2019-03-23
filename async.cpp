@@ -38,11 +38,7 @@ void receive(async::handle_t handle, const char *data, std::size_t size) {
 	std::shared_lock<std::shared_timed_mutex> l{smutex};
 	// no exception handling. Should be handled higher
 	auto a = bm.at(handle);
-
-	std::stringstream ss(std::string(data, size));
-	for(std::string line; std::getline(ss, line); ) {
-		a->parse_line(line);
-	}
+	a->parse_line(data, size);
 }
 
 void disconnect(async::handle_t handle) {

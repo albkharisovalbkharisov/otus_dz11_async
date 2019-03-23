@@ -9,6 +9,7 @@
 #include <atomic>
 #include <vector>
 #include <utility>	// std::move
+#include <sstream>
 
 template<bool count_lines_too = false>
 class dbg_counter
@@ -78,6 +79,7 @@ class bulk : public dbg_counter<true>
 	std::time_t time_first_chunk;
 	// m is mutex to protect concurent access to one bulk
 	std::mutex m;
+	std::stringstream ss;
 
 	void flush(void);
 	bool is_full(void);
@@ -86,7 +88,7 @@ class bulk : public dbg_counter<true>
 
 public:
 	bulk(size_t size);
-	void parse_line(std::string line);
+	void parse_line(const char * data, size_t size);
 	~bulk();
 };
 

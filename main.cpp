@@ -2,13 +2,14 @@
 #include <string.h>
 #include <thread>
 #include <vector>
+#include <sstream>
 #include "async.h"
 
 std::vector<std::thread> v;
 
 void receive_from_thread(decltype(async::connect(3)) &h, const char *str)
 {
-#if 0
+#if 1
 	async::receive(h, str, strlen(str));
 #else
 	v.emplace_back(async::receive, h, str, strlen(str));
@@ -37,7 +38,7 @@ int main(int, char *[]) {
 			async::disconnect(i);
 		}
 #else
-		async::handle_t h = async::connect(2);
+		async::handle_t h = async::connect(3);
 		receive_from_thread(h,"0");
 		receive_from_thread(h," ");
 		receive_from_thread(h,"0");
@@ -59,7 +60,6 @@ int main(int, char *[]) {
 	} catch (std::exception &e) {
 		std::cout << e.what() << std::endl;
 	}
-	std::cout << "gav" << std::endl;
 	return 0;
 }
 
