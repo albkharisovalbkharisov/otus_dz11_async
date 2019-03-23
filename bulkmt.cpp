@@ -151,41 +151,46 @@ bulk::bulk(size_t size) : bulk_size(size), brace_cnt(0), time_first_chunk(0) {
 	print_ptr->start_threads();
 }
 
-void bulk::parse_line(const char * data, size_t size)
+void bulk::collect_and_parse(const char * data, size_t size)
 {
-	std::cout << "parse_line: ss=\"" << ss.str() << "\", str=\"" << std::string(data,size) << "\"" << std::endl;
-	ss << std::string(data, size);
-
-	using std::string;
-
-	for (string line; (ss.str().find('\n') != std::string::npos) && getline(ss, line); ) {
-		std::cout << "		LETS PARSE: \"" << line << "\"" << std::endl;
-		line_inc();
-		std::unique_lock<std::mutex> l{m};
-		if (line == "{") {
-			if (!is_empty() && (brace_cnt == 0))
-				flush();
-			++brace_cnt;
-			return;
+	ss.append(data, size);
+	for (std::string::size_type pos; (pos = ss.find('\n')) != std::string::npos ; )
+	{
+		parse_line(std::string(ss, 0, pos));
+		ss.erase(0, pos+1);
+		if (ss.empty()) {
+			break;
 		}
-		else if (line == "}") {
-			if (brace_cnt > 0) {
-				--brace_cnt;
-				if (brace_cnt == 0) {
-					flush();
-					return;
-				}
-			}
-		}
-		else
-			add(line);
-
-		if (is_full() && !brace_cnt)
-			flush();
 	}
 }
 
-void bulk::add(std::string &s)
+void bulk::parse_line(const std::string &line)
+{
+	line_inc();
+	std::unique_lock<std::mutex> l{m};
+	if (line == "{") {
+		if (!is_empty() && (brace_cnt == 0))
+			flush();
+		++brace_cnt;
+		return;
+	}
+	else if (line == "}") {
+		if (brace_cnt > 0) {
+			--brace_cnt;
+			if (brace_cnt == 0) {
+				flush();
+				return;
+			}
+		}
+	}
+	else
+		add(line);
+
+	if (is_full() && !brace_cnt)
+		flush();
+}
+
+void bulk::add(const std::string &s)
 {
 	// protected by m mutex
 	cmd_inc();

@@ -79,16 +79,18 @@ class bulk : public dbg_counter<true>
 	std::time_t time_first_chunk;
 	// m is mutex to protect concurent access to one bulk
 	std::mutex m;
-	std::stringstream ss;
+//	std::stringstream ss;
+	std::string ss;
 
 	void flush(void);
 	bool is_full(void);
 	bool is_empty(void);
-	void add(std::string &s);
+	void add(const std::string &s);
+	void parse_line(const std::string &line);
 
 public:
 	bulk(size_t size);
-	void parse_line(const char * data, size_t size);
+	void collect_and_parse(const char * data, size_t size);
 	~bulk();
 };
 

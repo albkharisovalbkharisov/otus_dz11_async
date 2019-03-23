@@ -18,7 +18,7 @@ void receive_from_thread(decltype(async::connect(3)) &h, const char *str)
 
 int main(int, char *[]) {
 	try {
-#if 0
+#if 1
 		async::handle_t h[4];
 		int j = 2;
 		for (auto &i : h) {
@@ -39,6 +39,7 @@ int main(int, char *[]) {
 		}
 #else
 		async::handle_t h = async::connect(3);
+
 		receive_from_thread(h,"0");
 		receive_from_thread(h," ");
 		receive_from_thread(h,"0");
@@ -50,6 +51,7 @@ int main(int, char *[]) {
 		receive_from_thread(h,"\n");
 		receive_from_thread(h,"2");
 		receive_from_thread(h,"\n");
+
 
 		for (auto &t : v) {
 			t.join();
