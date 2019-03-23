@@ -9,7 +9,7 @@ std::vector<std::thread> v;
 
 void receive_from_thread(decltype(async::connect(3)) &h, const char *str)
 {
-#if 1
+#if 0
 	async::receive(h, str, strlen(str));
 #else
 	v.emplace_back(async::receive, h, str, strlen(str));
@@ -18,7 +18,7 @@ void receive_from_thread(decltype(async::connect(3)) &h, const char *str)
 
 int main(int, char *[]) {
 	try {
-#if 1
+#if 0
 		async::handle_t h[4];
 		int j = 2;
 		for (auto &i : h) {

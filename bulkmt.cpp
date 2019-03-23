@@ -153,6 +153,7 @@ bulk::bulk(size_t size) : bulk_size(size), brace_cnt(0), time_first_chunk(0) {
 
 void bulk::collect_and_parse(const char * data, size_t size)
 {
+	std::unique_lock<std::mutex> l{m};
 	ss.append(data, size);
 	for (std::string::size_type pos; (pos = ss.find('\n')) != std::string::npos ; )
 	{
@@ -167,7 +168,6 @@ void bulk::collect_and_parse(const char * data, size_t size)
 void bulk::parse_line(const std::string &line)
 {
 	line_inc();
-	std::unique_lock<std::mutex> l{m};
 	if (line == "{") {
 		if (!is_empty() && (brace_cnt == 0))
 			flush();
